@@ -1,52 +1,41 @@
-//your JS code here. If required.
-const input = document.getElementById('typeahead');
+const typeaheadInput = document.getElementById('typeahead');
 const suggestionsList = document.getElementById('suggestions-list');
+let timeoutId;
 
-let debounceTimeout;
+typeaheadInput.addEventListener('input', () => {
+    clearTimeout(timeoutId);
+    const query = typeaheadInput.value;
 
-input.addEventListener('input', () => {
-  const query = input.value.trim();
-
-  // Clear previous debounce timer
-  clearTimeout(debounceTimeout);
-
-  // If input is empty, clear suggestions and return
-  if (query === '') {
-    clearSuggestions();
-    return;
-  }
-
-  // Set a debounce timeout
-  debounceTimeout = setTimeout(() => {
-    fetchSuggestions(query);
-  }, 500);
+    if (query) {
+        timeoutId = setTimeout(() => {
+            fetchSuggestions(query);
+        }, 500);
+    } else {
+        // Clear suggestions if input is empty
+        suggestionsList.innerHTML = '';
+    }
 });
 
 function fetchSuggestions(query) {
-  fetch(`https://api.frontendexpert.io/api/fe/glossary-suggestions?text=${encodeURIComponent(query)}`)
-    .then(response => response.json())
-    .then(suggestions => {
-      showSuggestions(suggestions);
-    })
-    .catch(error => {
-      console.error('Error fetching suggestions:', error);
-    });
+    const url = `https://api.frontendexpert.io/api/fe/glossary-suggestions?text=${query}`;
+    
+    fetch(url)
+        .then(response => response.json())
+        .then(data => {
+            updateSuggestions(data);
+        })
+        .catch(error => console.error('Error fetching suggestions:', error));
 }
 
-function showSuggestions(suggestions) {
-  clearSuggestions();
-
-  suggestions.forEach(suggestion => {
-    const li = document.createElement('li');
-    li.textContent = suggestion;
-    li.addEventListener('click', () => {
-      input.value = suggestion;
-      clearSuggestions();
+function updateSuggestions(suggestions) {
+    suggestionsList.innerHTML = ''; // Clear previous suggestions
+    suggestions.forEach(term => {
+        const li = document.createElement('li');
+        li.textContent = term;
+        li.addEventListener('click', () => {
+            typeaheadInput.value = term; // Fill input with clicked suggestion
+            suggestionsList.innerHTML = ''; // Clear suggestions
+        });
+        suggestionsList.appendChild(li);
     });
-    suggestionsList.appendChild(li);
-  });
-}
-
-function clearSuggestions() {
-  suggestionsList.innerHTML = '';
 }
